@@ -367,6 +367,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.stride = stride
         self.path = path
         self.kpt_label = kpt_label
+        self.nkpt = nkpt
         self.flip_index = flip(nkpt)
         
         assert not kpt_label or (kpt_label and nkpt > 0), 'should declare nkpt in the data.yaml file, not found.'
