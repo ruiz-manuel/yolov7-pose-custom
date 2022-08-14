@@ -6,7 +6,6 @@ import torch.nn as nn
 from utils.general import bbox_iou
 from utils.torch_utils import is_parallel
 
-
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
     return 1.0 - 0.5 * eps, 0.5 * eps
@@ -183,10 +182,8 @@ class ComputeLoss:
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         tcls, tbox, tkpt, indices, anch = [], [], [], [], []
-        if self.kpt_label:
-            gain = torch.ones(41, device=targets.device)  # normalized to gridspace gain
-        else:
-            gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
+        gain_length = 7 + 2 * self.nkpt if self.kpt_label else 7
+        gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
         ai = torch.arange(na, device=targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
         targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
 
@@ -199,9 +196,9 @@ class ComputeLoss:
         for i in range(self.nl):
             anchors = self.anchors[i]
             if self.kpt_label:
-                gain[2:40] = torch.tensor(p[i].shape)[19*[3, 2]]  # xyxy gain
+                gain[2:gain_length-1] = torch.tensor(p[i].shape)[(2 + self.nkpt)*[3, 2]]  # xyxy gain
             else:
-                gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
+                gain[2:gain_length-1] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
 
             # Match targets to anchors
             t = targets * gain
