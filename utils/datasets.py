@@ -506,7 +506,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                             assert (l[:, 5::3] <= 1).all(), 'non-normalized or out of bounds coordinate labels'
                             assert (l[:, 6::3] <= 1).all(), 'non-normalized or out of bounds coordinate labels'
                             # print("l shape", l.shape)
-                            kpts = np.zeros((l.shape[0], 39))
+                            kpts = np.zeros((l.shape[0], self.nkpt * 2 + 5))
                             for i in range(len(l)):
                                 kpt = np.delete(l[i,5:], np.arange(2, l.shape[1]-5, 3))  #remove the occlusion paramater from the GT
                                 kpts[i] = np.hstack((l[i, :5], kpt))
