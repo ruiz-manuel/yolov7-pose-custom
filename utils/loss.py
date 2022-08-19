@@ -28,7 +28,7 @@ class BCEBlurWithLogitsLoss(nn.Module):
         return loss.mean()
 
 
-class FocalLoss(nn.Module):
+
     # Wraps focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
     def __init__(self, loss_fcn, gamma=1.5, alpha=0.25):
         super(FocalLoss, self).__init__()
@@ -115,7 +115,7 @@ class ComputeLoss:
     def __call__(self, p, targets):  # predictions, targets, model
         device = targets.device
         lcls, lbox, lobj, lkpt, lkptv = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
-        sigmas = torch.tensor([.26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07, .87, .87, .89, .89], device=device) / 10.0
+        sigmas = torch.full((self.nkpt,), 0.25, device=device) / 10.0
         tcls, tbox, tkpt, indices, anchors = self.build_targets(p, targets)  # targets
 
         # Losses
@@ -230,7 +230,7 @@ class ComputeLoss:
 
             # Append
             a = t[:, -1].long()  # anchor indices
-            indices.append((b, a, gj.clamp_(0, gain[3] - 1).long(),gi.clamp_(0, gain[2] - 1).long())) # image, anchor, grid indices            
+            indices.append((b, a, gj.clamp_(0, gain[3].long() - 1),gi.clamp_(0, gain[2].long() - 1))) # image, anchor, grid indices            
             tbox.append(torch.cat((gxy - gij, gwh), 1))  # box
             if self.kpt_label:
                 for kpt in range(self.nkpt):
