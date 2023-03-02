@@ -1,0 +1,10 @@
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: /datasets/deformed_triple_WB/  
+train: /datasets/deformed_triple_WB/train/images  # train images (relative to 'path') 
+val: /datasets/deformed_triple_WB/valid/images  # val images (relative to 'path') 
+
+# Classes
+nc: 1  # number of classes
+nkpt: 4
+names: ["GOOD-A"]
+#names: ["GOOD-A", "GOOD-B", "BAD-LEFT", "BAD-RIGHT", "BAD-BOTH"]  # class names
