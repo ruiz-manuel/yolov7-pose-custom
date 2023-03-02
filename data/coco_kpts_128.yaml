@@ -16,5 +16,7 @@ val: ../coco_kpts_128/train2017.txt  # 128 images
 # number of classes
 nc: 1
 
+nkpt: 4
+
 # class names
 names: [ 'person' ]

@@ -46,6 +46,7 @@ def test(data,
          tidl_load=False,
          dump_img=False,
          kpt_label=False,
+         nkpt=False,
          flip_test=False):
     # Initialize/load model and set device
     training = model is not None
@@ -77,13 +78,18 @@ def test(data,
     # Configure
     model.eval()
     model.model[-1].flip_test = False
-    model.model[-1].flip_index = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
+    #model.model[-1].flip_index = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
+    model.model[-1].flip_index = list(range(nkpt))
     if isinstance(data, str):
         is_coco = data.endswith('coco.yaml') or data.endswith('coco_kpts.yaml')
         with open(data) as f:
             data = yaml.safe_load(f)
     check_dataset(data)  # check
     nc = 1 if single_cls else int(data['nc'])  # number of classes
+    if kpt_label:
+        nkpt =  int(data['nkpt'])  # number of keypoints
+    model.model[-1].flip_index = list(range(nkpt))
+
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
@@ -97,7 +103,7 @@ def test(data,
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = opt.task if opt.task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.5, rect=True,
-                                       prefix=colorstr(f'{task}: '), tidl_load=tidl_load, kpt_label=kpt_label)[0]
+                                       prefix=colorstr(f'{task}: '), tidl_load=tidl_load, kpt_label=kpt_label, nkpt=nkpt)[0]
 
     seen = 0
     confusion_matrix = ConfusionMatrix(nc=nc)
@@ -263,10 +269,10 @@ def test(data,
         if plots and batch_i < 3000:
             f = save_dir / f'{path.stem}_labels.jpg'  # labels
             #Thread(target=plot_images, args=(img, targets, paths, f, names), daemon=True).start()
-            plot_images(img, targets, paths, f, names, kpt_label=kpt_label, orig_shape=shapes[si])
+            plot_images(img, targets, paths, f, names, kpt_label=kpt_label, nkpt=nkpt, orig_shape=shapes[si])
             f = save_dir / f'{path.stem}_pred.jpg'  # predictions
             #Thread(target=plot_images, args=(img, output_to_target(out), paths, f, names), daemon=True).start()
-            plot_images(img, output_to_target(out), paths, f, names, kpt_label=kpt_label, steps=3, orig_shape=shapes[si])
+            plot_images(img, output_to_target(out), paths, f, names, kpt_label=kpt_label, nkpt=nkpt, steps=3, orig_shape=shapes[si])
 
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy

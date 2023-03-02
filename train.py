@@ -91,6 +91,10 @@ def train(hyp, opt, device, tb_writer=None):
         state_dict = ckpt['model'].float().state_dict()  # to FP32
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
         model.load_state_dict(state_dict, strict=False)  # load
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)  # load #sx1
+        #print('missing_keys: ', missing_keys)
+        #print('unexpected_keys: ', unexpected_keys)
+        #raise
         logger.info('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
     else:
         model = Model(opt.cfg, ch=3, nc=nc, anchors=hyp.get('anchors'), nkpt=nkpt).to(device)  # create
@@ -344,7 +348,7 @@ def train(hyp, opt, device, tb_writer=None):
                 # Plot
                 if plots and ni < 33:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
-                    plot_images(imgs, targets, paths, f, kpt_label=kpt_label)
+                    plot_images(imgs, targets, paths, f, kpt_label=kpt_label, nkpt=nkpt)
                     #Thread(target=plot_images, args=(imgs, targets, paths, f), daemon=True).start()
                     # if tb_writer:
                     #     tb_writer.add_image(f, result, dataformats='HWC', global_step=epoch)
@@ -379,7 +383,8 @@ def train(hyp, opt, device, tb_writer=None):
                                                  wandb_logger=wandb_logger,
                                                  compute_loss=compute_loss,
                                                  is_coco=is_coco,
-                                                 kpt_label=kpt_label)
+                                                 kpt_label=kpt_label,
+                                                 nkpt=nkpt)
 
             # Write
             with open(results_file, 'a') as f:

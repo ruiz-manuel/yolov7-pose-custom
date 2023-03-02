@@ -86,24 +86,22 @@ def plot_one_box(x, im, color=None, label=None, line_thickness=3, kpt_label=Fals
 
 def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
     #Plot the skeleton and keypointsfor coco datatset
-    palette = np.array([[255, 128, 0], [255, 153, 51], [255, 178, 102],
-                        [230, 230, 0], [255, 153, 255], [153, 204, 255],
-                        [255, 102, 255], [255, 51, 255], [102, 178, 255],
-                        [51, 153, 255], [255, 153, 153], [255, 102, 102],
-                        [255, 51, 51], [153, 255, 153], [102, 255, 102],
-                        [51, 255, 51], [0, 255, 0], [0, 0, 255], [255, 0, 0],
-                        [255, 255, 255]])
+    palette = np.array([[255, 128, 0], [255, 153, 255], [102, 205, 102], [0, 0, 255]])
 
     # skeleton = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
     #             [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
     #             [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
 
-    skeleton = []
+    skeleton = [[1, 2], [2, 3], [3, 4]]
     
-    pose_limb_color = palette[[9, 9, 9, 9, 7, 7, 7, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16]]
-    pose_kpt_color = palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
-    radius = 5
+    #pose_limb_color = palette[[9, 9, 9, 9, 7, 7, 7, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16]]
+    pose_limb_color = palette[[limb[0]-1 for limb in skeleton]]
+    #pose_kpt_color = palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
+    #pose_kpt_color = palette[[16, 0, 9, 1]]
+    radius = 4
+    min_conf = 0.2
     num_kpts = len(kpts) // steps
+    pose_kpt_color = palette[list(range(num_kpts))]
 
     for kid in range(num_kpts):
         r, g, b = pose_kpt_color[kid]
@@ -111,8 +109,9 @@ def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
         if not (x_coord % 640 == 0 or y_coord % 640 == 0):
             if steps == 3:
                 conf = kpts[steps * kid + 2]
-                if conf < 0.5:
-                    continue
+                if conf < min_conf:
+                    r, g, b = [255, 0, 0]
+                    #continue
             cv2.circle(im, (int(x_coord), int(y_coord)), radius, (int(r), int(g), int(b)), -1)
 
     for sk_id, sk in enumerate(skeleton):
@@ -122,7 +121,7 @@ def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
         if steps == 3:
             conf1 = kpts[(sk[0]-1)*steps+2]
             conf2 = kpts[(sk[1]-1)*steps+2]
-            if conf1<0.5 or conf2<0.5:
+            if conf1<min_conf or conf2<min_conf:
                 continue
         if pos1[0]%640 == 0 or pos1[1]%640==0 or pos1[0]<0 or pos1[1]<0:
             continue
@@ -177,7 +176,7 @@ def output_to_target(output):
     return np.array(targets)
 
 
-def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max_size=640, max_subplots=16, kpt_label=True, steps=2, orig_shape=None):
+def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max_size=640, max_subplots=16, kpt_label=True, steps=2, orig_shape=None, nkpt=None):
     # Plot image grid with labels
 
     if isinstance(images, torch.Tensor):
@@ -218,8 +217,9 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
             image_targets = targets[targets[:, 0] == i]
             boxes = xywh2xyxy(image_targets[:, 2:6]).T
             classes = image_targets[:, 1].astype('int')
-            labels = image_targets.shape[1] == 40 if kpt_label else image_targets.shape[1] == 6   # labels if no conf column
+            labels = image_targets.shape[1] == 6 + nkpt*2 if kpt_label else image_targets.shape[1] == 6   # labels if no conf column
             conf = None if labels else image_targets[:, 6]  # check for confidence presence (label vs pred)
+            
             if kpt_label:
                 if conf is None:
                     kpts = image_targets[:, 6:].T   #kpts for GT
@@ -246,6 +246,7 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
                     kpts[list(range(1, len(kpts), steps))] *= scale_factor
                 kpts[list(range(0, len(kpts), steps))] += block_x
                 kpts[list(range(1, len(kpts), steps))] += block_y
+            #print('kpts_scaled', kpts)
 
             for j, box in enumerate(boxes.T):
                 cls = int(classes[j])
@@ -489,10 +490,10 @@ def plot_results_overlay(start=0, stop=0):  # from utils.plots import *; plot_re
 
 def plot_results(start=0, stop=0, bucket='', id=(), labels=(), save_dir=''):
     # Plot training 'results*.txt'. from utils.plots import *; plot_results(save_dir='runs/train/exp')
-    fig, ax = plt.subplots(2, 5, figsize=(12, 6), tight_layout=True)
+    fig, ax = plt.subplots(2, 6, figsize=(15, 6), tight_layout=True)
     ax = ax.ravel()
-    s = ['Box', 'Objectness', 'Classification', 'Precision', 'Recall',
-         'val Box', 'val Objectness', 'val Classification', 'mAP@0.5', 'mAP@0.5:0.95']
+    s = ['Box', 'Objectness', 'Classification', 'Keypoint', 'Precision', 'Recall', 
+         'val Box', 'val Objectness', 'val Classification', 'kptv', 'mAP@0.5', 'mAP@0.5:0.95']
     if bucket:
         # files = ['https://storage.googleapis.com/%s/results%g.txt' % (bucket, x) for x in id]
         files = ['results%g.txt' % x for x in id]
@@ -503,10 +504,10 @@ def plot_results(start=0, stop=0, bucket='', id=(), labels=(), save_dir=''):
     assert len(files), 'No results.txt files found in %s, nothing to plot.' % os.path.abspath(save_dir)
     for fi, f in enumerate(files):
         try:
-            results = np.loadtxt(f, usecols=[2, 3, 4, 8, 9, 12, 13, 14, 10, 11], ndmin=2).T
+            results = np.loadtxt(f, usecols=[2, 3, 4, 5, 10, 11, 14, 15, 16, 7, 12, 13], ndmin=2).T
             n = results.shape[1]  # number of rows
             x = range(start, min(stop, n) if stop else n)
-            for i in range(10):
+            for i in range(12):
                 y = results[i, x]
                 if i in [0, 1, 2, 5, 6, 7]:
                     y[y == 0] = np.nan  # don't show zero loss values
