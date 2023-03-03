@@ -126,7 +126,7 @@ class ComputeLoss:
             n = b.shape[0]  # number of targets
             if n:
                 ps = pi[b, a, gj, gi]  # prediction subset corresponding to targets
-
+                
                 # Regression
                 pxy = ps[:, :2].sigmoid() * 2. - 0.5
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
@@ -135,9 +135,9 @@ class ComputeLoss:
                 lbox += (1.0 - iou).mean()  # iou loss
                 if self.kpt_label:
                     #Direct kpt prediction
-                    pkpt_x = ps[:, 6::3] * 2. - 0.5
-                    pkpt_y = ps[:, 7::3] * 2. - 0.5
-                    pkpt_score = ps[:, 8::3]
+                    pkpt_x = ps[:, 5 + self.nc::3] * 2. - 0.5
+                    pkpt_y = ps[:, 6 + self.nc::3] * 2. - 0.5
+                    pkpt_score = ps[:, 7 + self.nc::3]
                     #mask
                     kpt_mask = (tkpt[i][:, 0::2] != 0)
                     lkptv += self.BCEcls(pkpt_score, kpt_mask.float()) 
@@ -155,9 +155,9 @@ class ComputeLoss:
 
                 # Classification
                 if self.nc > 1:  # cls loss (only if multiple classes)
-                    t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
+                    t = torch.full_like(ps[:, 5:5+self.nc], self.cn, device=device)  # targets
                     t[range(n), tcls[i]] = self.cp
-                    lcls += self.BCEcls(ps[:, 5:], t)  # BCE
+                    lcls += self.BCEcls(ps[:, 5:5+self.nc], t)  # BCE
 
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:

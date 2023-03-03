@@ -4,7 +4,7 @@ train: /datasets/deformed_triple_WB/train/images  # train images (relative to 'p
 val: /datasets/deformed_triple_WB/valid/images  # val images (relative to 'path') 
 
 # Classes
-nc: 1  # number of classes
+nc: 5  # number of classes
 nkpt: 4
-names: ["GOOD-A"]
-#names: ["GOOD-A", "GOOD-B", "BAD-LEFT", "BAD-RIGHT", "BAD-BOTH"]  # class names
+#names: ["GOOD-A"]
+names: ["GOOD-A", "GOOD-B", "BAD-LEFT", "BAD-RIGHT", "BAD-BOTH"]  # class names
